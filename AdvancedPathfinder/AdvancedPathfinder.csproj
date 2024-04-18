@@ -24,6 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="0Harmony">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\0Harmony.dll</HintPath>
     </Reference>
@@ -75,6 +78,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FibonacciHeap\FibonacciHeap.csproj" />
     <ProjectReference Include="..\XMNUtils\XMNUtils.csproj" />
   </ItemGroup>
 
