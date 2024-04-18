@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4FA556}") = "AdvancedPathfinder", "Advan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PathfinderBenchmark", "PathfinderBenchmark\PathfinderBenchmark.csproj", "{35F6C7EE-8122-4AD2-9E1C-3EF63437D6B9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XMNUtils", "XMNUtils\XMNUtils.csproj", "{818C45EE-0A30-472E-ACDD-C511A28FD218}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{35F6C7EE-8122-4AD2-9E1C-3EF63437D6B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35F6C7EE-8122-4AD2-9E1C-3EF63437D6B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35F6C7EE-8122-4AD2-9E1C-3EF63437D6B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{818C45EE-0A30-472E-ACDD-C511A28FD218}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{818C45EE-0A30-472E-ACDD-C511A28FD218}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{818C45EE-0A30-472E-ACDD-C511A28FD218}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{818C45EE-0A30-472E-ACDD-C511A28FD218}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

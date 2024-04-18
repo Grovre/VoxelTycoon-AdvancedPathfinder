@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>default</LangVersion>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <Reference Include="0Harmony">
+          <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+          <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\Newtonsoft.Json.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UI">
+          <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\UnityEngine.UI.dll</HintPath>
+        </Reference>
+        <Reference Include="VoxelTycoon">
+            <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\VoxelTycoon.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+            <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\VoxelTycoon\VoxelTycoon_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+</Project>
