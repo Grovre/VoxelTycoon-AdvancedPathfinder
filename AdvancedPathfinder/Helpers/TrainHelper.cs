@@ -119,11 +119,14 @@ namespace AdvancedPathfinder.Helpers
 
         protected override void OnInitialize()
         {
-            LazyManager<VehicleManager>.Current.VehicleRemoved += VehicleRemoved;
+            LazyManager<VehicleManager>.Current.Changed += VehicleRemoved;
         }
 
-        private void VehicleRemoved(Vehicle vehicle)
+        private void VehicleRemoved(Vehicle vehicle, VehicleManagerChangedEventType eventType)
         {
+            if (eventType != VehicleManagerChangedEventType.Removed)
+                return;
+            
             if (vehicle is Train train)
             {
                 if (_trainToPath.TryGetValue(train, out PathCollection path))
