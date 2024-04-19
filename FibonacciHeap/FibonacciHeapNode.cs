@@ -57,5 +57,15 @@ namespace FibonacciHeap
         /// Gets or sets the value of the node degree.
         /// </summary>
         internal int Degree { get; set; }
+
+        public void Reset()
+        {
+            Parent = null;
+            Child = null;
+            Left = null;
+            Right = null;
+            Mark = false;
+            Degree = 0;
+        }
     }
 }
