@@ -21,7 +21,7 @@ using TrackHelper = AdvancedPathfinder.Helpers.TrackHelper;
 namespace AdvancedPathfinder.PathSignals
 {
     [HarmonyPatch]
-    [SchemaVersion(1)]
+    [SchemaVersion(2)]
     public class PathSignalManager : SimpleManager<PathSignalManager>
     {
         //TODO: optimize == operators on RailBlocks
@@ -38,6 +38,7 @@ namespace AdvancedPathfinder.PathSignals
         private readonly PathCollection _detachingPathCache = new();
         internal readonly Dictionary<RailSignal, Train> OpenedSignals = new();
         private static bool _wasInvalidPath;
+        private readonly Dictionary<Train, float> _waitUntil = new();
 
         internal IReadOnlyDictionary<RailBlock, RailBlockData> RailBlocks => _railBlocks;
         
@@ -82,7 +83,17 @@ namespace AdvancedPathfinder.PathSignals
             {
                 AdvancedPathfinderMod.Logger.LogError("Signal data not found");
                 return null;
-//                throw new InvalidOperationException("Signal data not found");
+            }
+
+            return signalData;
+        }
+
+        [CanBeNull]
+        internal PathSignalData TryGetPathSignalData(RailSignal signal)
+        {
+            if (!_pathSignals.TryGetValue(signal, out PathSignalData signalData))
+            {
+                return null;
             }
 
             return signalData;
@@ -117,11 +128,15 @@ namespace AdvancedPathfinder.PathSignals
         internal void Write(StateBinaryWriter writer)
         {
             WriteReservedPathIndexes(writer);
+            WritePreReservedSignals(writer);
         }
 
         internal void Read(StateBinaryReader reader)
         {
             ReadReservedPathIndexes(reader);
+            if (SchemaVersion<PathSignalManager>.AtLeast(2))
+                ReadPreReservedSignals(reader);
+            _highlightDirty = true;
         }
 
         internal bool ShouldUpdatePath(Train train, RailSignal signal)
@@ -143,6 +158,40 @@ namespace AdvancedPathfinder.PathSignals
             }
 
             return false;
+        }
+
+        private void WritePreReservedSignals(StateBinaryWriter writer)
+        {
+            PooledList<PathSignalData> dataToWrite = PooledList<PathSignalData>.Take();
+            foreach (PathSignalData pathSignalData in _pathSignals.Values)
+            {
+                if (pathSignalData.IsPreReserved || pathSignalData.HasOppositeSignal && (!ReferenceEquals(pathSignalData.ReservedForTrain, null) || !ReferenceEquals(pathSignalData.BlockedForTrain, null)))
+                {
+                    dataToWrite.Add(pathSignalData);
+                }
+            }
+            writer.WriteInt(dataToWrite.Count);
+            foreach (PathSignalData pathSignalData in dataToWrite)
+            {
+                writer.WriteTrackConnection(pathSignalData.Signal.Connection);
+                pathSignalData.Write(writer);
+            }
+        }
+
+        private void ReadPreReservedSignals(StateBinaryReader reader)
+        {
+            int count = reader.ReadInt();
+            for (int i = 0; i < count; i++)
+            {
+                RailConnection conn = reader.ReadTrackConnection() as RailConnection;
+                
+                if (ReferenceEquals(conn, null)) continue;
+                RailSignal signal = conn.Signal;
+                
+                if (signal == null || !signal.IsBuilt) continue;
+                PathSignalData signalData = GetPathSignalData(signal);
+                signalData?.Read(reader);
+            }
         }
         
         private void SetTrainsPathUpdateTimes()
@@ -257,6 +306,7 @@ namespace AdvancedPathfinder.PathSignals
         {
             SimpleLazyManager<PathSignalHighlighter>.Current.HighlightPaths = ModSettings<Settings>.Current.HighlightReservedPaths;
             SimpleLazyManager<PathSignalHighlighter>.Current.HighlightReservedBounds = ModSettings<Settings>.Current.HighlightReservedPathsExtended;
+            SimpleLazyManager<PathSignalHighlighter>.Current.HighlightPreReservedSignals = ModSettings<Settings>.Current.HighlightReservedPathsExtended;
         }
 
         private void OnLateUpdate()
@@ -331,11 +381,12 @@ namespace AdvancedPathfinder.PathSignals
 
                 PathRailBlockData data = GetOrCreateRailBlockData(block);
                 data.InboundSignals.Add(signal, null);
-                RailSignal oppositeSignal = signal.Connection.InnerConnection.Signal;
-                if (oppositeSignal != null)
-                {
-                    data.OutboundSignals.Add(oppositeSignal);
-                }
+
+                RailBlock oppositeBlock = signal.Connection?.Block;
+                if (ReferenceEquals(oppositeBlock, null)) continue;
+                
+                PathRailBlockData oppositeData = GetOrCreateRailBlockData(block);
+                oppositeData.OutboundSignals.Add(signal);
             }
 
             DetectSimpleBlocks();
@@ -442,6 +493,7 @@ namespace AdvancedPathfinder.PathSignals
                 _pathSignals.Add(signal, data);
                 _changedStates.Add(signal);
                 blockData.InboundSignals[signal] = data;
+                data.TryUpdateOppositeSignalData();
             }
         }
 
@@ -481,6 +533,14 @@ namespace AdvancedPathfinder.PathSignals
                 Manager<RailPathfinderManager>.Current.Stats?.StopSignalOpenForTrain();
                 return ReferenceEquals(reservedTrain, train);
             }
+
+            if (_waitUntil.TryGetValue(train, out float time))
+            {
+                if (time > Time.time)
+                    return false;
+                _waitUntil.Remove(train);
+            }
+            
             PathSignalData signalData = GetPathSignalData(signal);
             if (signalData == null) //no signal data, probably network was changed, and in the next update cycle it will be available 
                 return false;
@@ -513,25 +573,26 @@ namespace AdvancedPathfinder.PathSignals
                 return false;
             }
 
-            bool result = signalData.BlockData.TryReservePath(train, path, pathIndex.Value, out int reservedPathIndex) && ReferenceEquals(signalData.ReservedForTrain, train);
+            ReserveResult result = signalData.BlockData.TryReservePath(train, path, pathIndex.Value);
 //            FileLog.Log($"IsSignalOpenForTrain 2 {result}, train: {train.GetHashCode():X8}, signal: {signalData.GetHashCode():X8}");
-            if (result)
+            if (result.IsReserved && ReferenceEquals(signalData.ReservedForTrain, train))
             {
-                (int reservedIdx, int? nextDestinationIdx) pathIds = _reservedPathIndex.GetValueOrDefault(train, (reservedPathIndex, null));
-                pathIds.reservedIdx = reservedPathIndex;
+                UpdateReservedPathIndex(train, result.ReservedIndex);
 //                FileLog.Log($"IsSignalOpenForTrain, train: {train.GetHashCode():X8}, signal: {signalData.GetHashCode():X8}, reservedPathIndex: {pathIds.reservedIdx}");
-                _reservedPathIndex[train] = pathIds;
                 _updateTrainBoundsHighlight.Add(train);
                 if (ReferenceEquals(train.FrontBound.Connection, signal.Connection))
                 {
                     //connection with signal is reached - we need to call TrainConnectionReached to proper signal release after passing
                     TrainConnectionReached(train, signal.Connection);
                 }
+            } else if (result.PreReservationFailed)
+            {
+                _waitUntil[train] = Time.time + 1f;
             }
 
             Manager<RailPathfinderManager>.Current!.Stats?.StopSignalOpenForTrain();
 //            HighlightReservedPaths();
-            return result;
+            return result.IsReserved;
         }
 
         private void TrainConnectionReached(Train train, TrackConnection connection)
@@ -754,13 +815,17 @@ namespace AdvancedPathfinder.PathSignals
             {
 //                FileLog.Log($"Block removing {data.GetHashCode():X8}");
                 using PooledList<Train> passed = PooledList<Train>.Take(); 
-                foreach (RailSignal signal in data.InboundSignals.Keys)
+                foreach (KeyValuePair<RailSignal, PathSignalData> signalPair in data.InboundSignals)
                 {
-                    _pathSignals.Remove(signal);
-                    OpenedSignals.Remove(signal);
+                    _pathSignals.Remove(signalPair.Key);
+                    OpenedSignals.Remove(signalPair.Key);
 //                    FileLog.Log($"Removed signal {signal.GetHashCode():X8}");
-                    passed.AddRange(from pair in _passedSignals where pair.Value == signal select pair.Key);
-                    _changedStates.Add(signal);
+                    passed.AddRange(from pair in _passedSignals where pair.Value == signalPair.Key select pair.Key);
+                    _changedStates.Add(signalPair.Key);
+                    if (signalPair.Value.HasOppositeSignal)
+                    {
+                        signalPair.Value.OppositeSignalRemoved();
+                    }
                 }
                 _railBlocks.Remove(block);
                 foreach (Train train in passed)
@@ -895,6 +960,15 @@ namespace AdvancedPathfinder.PathSignals
                     if (!ReferenceEquals(reserved, null) || !ReferenceEquals(nonstop, null))
                         yield return (pair.Value, reserved, nonstop);
                 }
+            }
+        }
+
+        internal IEnumerable<RailSignal> GetPreReservedSignalsForHighlight()
+        {
+            foreach (KeyValuePair<RailSignal,PathSignalData> pair in _pathSignals)
+            {
+                if (pair.Value.IsPreReserved)
+                    yield return pair.Key;
             }
         }
 

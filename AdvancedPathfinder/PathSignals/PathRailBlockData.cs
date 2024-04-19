@@ -15,11 +15,11 @@ namespace AdvancedPathfinder.PathSignals
 {
     public class PathRailBlockData: RailBlockData
     {
-        public readonly HashSet<RailSignal> OutboundSignals = new();
         private readonly Dictionary<Rail, int> _blockedRails = new();
         private readonly Dictionary<Rail, int> _blockedLinkedRails = new();
         private int _lastPathIndex;
         private RailSignal _lastEndSignal;
+        private RailSignal _lastEndSignalOpposite;
 
         private readonly Dictionary<Train, PooledHashSet<Rail>> _reservedBeyondPath = new(); //only rails in possible path, not linked rails
         private readonly Dictionary<Train, PooledHashSet<Rail>> _reservedTrainPath = new(); //only rails in train path, not linked rails
@@ -36,7 +36,7 @@ namespace AdvancedPathfinder.PathSignals
 
         public SimpleRailBlockData ToSimpleBlockData()
         {
-            return new (this);
+            return new SimpleRailBlockData(this);
         }
 
         /** get a sum of blocked rails from provided connection list */
@@ -61,6 +61,7 @@ namespace AdvancedPathfinder.PathSignals
 //            FileLog.Log($"ReleaseSegmentStart, rail: {rail.GetHashCode():X8} block: {GetHashCode():X}");
             if (!_reservedTrainPath.TryGetValue(train, out PooledHashSet<Rail> reservedList))
             {
+                RemovePreReservation(train, rail);
                 TryFreeFullBlock();
                 return;
             }
@@ -104,14 +105,37 @@ namespace AdvancedPathfinder.PathSignals
             rails.Dispose();
         }
 
+        
         // ReSharper restore Unity.PerformanceCriticalContext
-        internal override bool TryReservePath(Train train, PathCollection path, int startIndex, out int reservedIndex)
+        protected internal override bool TryReservePathInternal(Train train, PathCollection path, int startIndex,
+            ReserveResult reserveResult, bool onlyPreReservation = false)
         {
 //            FileLog.Log($"Try reserve path, train: {train.GetHashCode():X8}, block: {GetHashCode():X8}");
-            reservedIndex = 0;
             if (IsFullBlocked)
                 return false;
+            reserveResult.ReservedIndex = 0;
             PathSignalData startSignalData = GetAndTestStartSignal(path, startIndex);
+            if (startSignalData.HasOppositeSignal && startSignalData.OppositeSignalData.IsPreReserved)
+            {
+                reserveResult.PreReservationFailed = true;
+                return false;
+            }
+            if (onlyPreReservation)
+            {
+                if (startSignalData.IsChainSignal)
+                {
+                    if (startSignalData.HasOppositeSignal)
+                    {
+                        reserveResult.ReservedIndex = Math.Min(startIndex, path.FrontIndex);
+                        reserveResult.AddSignalToPreReserve(startSignalData);
+                    }
+                    return true; //chain signal stops pre-reservations
+                }
+
+                FindNextSignal(path, startIndex);
+                reserveResult.ReservedIndex = Math.Min(_lastPathIndex, path.FrontIndex);
+                return TryPreReserveSignal(train, path, reserveResult, startSignalData);
+            }
             if (startSignalData.IsChainSignal)
             {
 //                FileLog.Log($"TryReservePath ChainSignal: {GetHashCode():X}");
@@ -123,15 +147,13 @@ namespace AdvancedPathfinder.PathSignals
                     // ReSharper disable once PossibleNullReferenceException
                     if (SimpleManager<PathSignalManager>.Current.ShouldUpdatePath(train, _lastEndSignal))
                         return false;
-                    PathSignalData nextSignalData = SimpleManager<PathSignalManager>.SafeCurrent.GetPathSignalData(_lastEndSignal);
+                    PathSignalData nextSignalData = SimpleManager<PathSignalManager>.Current.GetPathSignalData(_lastEndSignal);
                     if (nextSignalData == null) //no signal data, probably network was changed, and in the next update cycle it will be available 
                         return false;
                     if (!ReferenceEquals(nextSignalData.ReservedForTrain, train)) //if path is reserved for this train, we can stop finding following chain signals
                     {
                         RailBlockData nextBlockData = nextSignalData.BlockData;
-//                        if (nextBlockData == this)
-//                            return false; //invalid block configuration - signal between same blocks 
-                        if (!nextBlockData.TryReservePath(train, path, _lastPathIndex, out reservedIndex))
+                        if (!nextBlockData.TryReservePathInternal(train, path, _lastPathIndex, reserveResult))
                             return false;
                     }
                 }
@@ -139,9 +161,8 @@ namespace AdvancedPathfinder.PathSignals
                 return true;
             }
 
-            if (TryReserveOwnPath(train, path, startIndex, startSignalData))
+            if (TryReserveOwnPath(train, path, startIndex, startSignalData, reserveResult))
             {
-                reservedIndex = Math.Min(_lastPathIndex, path.FrontIndex);
                 return true;
             }
 
@@ -293,17 +314,46 @@ namespace AdvancedPathfinder.PathSignals
             }
         }
         
-        private bool TryReserveOwnPath([NotNull] Train train, [NotNull] PathCollection path, int startIndex, PathSignalData startSignalData)
+        private bool TryReserveOwnPath([NotNull] Train train, [NotNull] PathCollection path, int startIndex, PathSignalData startSignalData, ReserveResult reserveResult)
         {
 //            FileLog.Log($"TryReserveOwnPath: {GetHashCode():X}");
             using PooledList<RailToBlock> railCache = PooledList<RailToBlock>.Take();
             if (!CanReserveOwnPath(train, path, startIndex, startSignalData, railCache))
                 return false;
 
+            reserveResult.ReservedIndex = Math.Min(_lastPathIndex, path.FrontIndex);
+            if (!TryPreReserveSignal(train, path, reserveResult, startSignalData, false)) 
+                return false;
+
             ReserveOwnPathInternal(train, railCache, startSignalData);
             return true;
         }
-        
+
+        private bool TryPreReserveSignal(Train train, PathCollection path, ReserveResult reserveResult,
+            PathSignalData startSignalData, bool doReservation = true)
+        {
+            if (!ReferenceEquals(_lastEndSignal, null) && !ReferenceEquals(_lastEndSignalOpposite, null))
+            {
+                //bidirectional track, we need to test and pre-reserve whole bidirectional part of track
+                PathSignalData nextSignalData =
+                    SimpleManager<PathSignalManager>.Current!.GetPathSignalData(_lastEndSignal);
+                if (nextSignalData == null)
+                    return false;
+                if (!startSignalData.IsPreReservedForTrain(train) && !nextSignalData.IsPreReservedForTrain(train))
+                {
+                    if (!nextSignalData.BlockData.TryReservePathInternal(train, path, _lastPathIndex, reserveResult, true))
+                        return false;
+                    if (doReservation)
+                        reserveResult.AddSignalToPreReserve(startSignalData);
+                }
+            } else if (startSignalData.HasOppositeSignal)
+            {
+                reserveResult.AddSignalToPreReserve(startSignalData);
+            }
+
+            return true;
+        }
+
         private bool CanReserveOwnPath(Train train, [NotNull] PathCollection path, int startIndex, PathSignalData startSignalData, PooledList<RailToBlock> cacheList = null)
         {
             if (!ReferenceEquals(startSignalData.ReservedForTrain, null))
@@ -329,6 +379,12 @@ namespace AdvancedPathfinder.PathSignals
                 cacheList?.Add(railToBlock);
             }
 
+            if (!ReferenceEquals(_lastEndSignalOpposite, null))
+            {
+                PathSignalData oppositeData = SimpleManager<PathSignalManager>.Current!.GetPathSignalData(_lastEndSignalOpposite);
+                if (oppositeData != null && !ReferenceEquals(oppositeData.BlockedForTrain, null)) 
+                    return false; //opposite signal at the end of the track is blocked for train in opposite direction (takes place only after loading the game)
+            }
             return true;
         }
 
@@ -418,17 +474,22 @@ namespace AdvancedPathfinder.PathSignals
             }))
             {}
         }
+
+        private void FindNextSignal(PathCollection path, int startIndex)
+        {
+            foreach (var _ in AffectedRailsEnum(path, startIndex, false, false, false))
+            {}
+        }
         
-        private IEnumerable<RailToBlock> AffectedRailsEnum(PathCollection path, int startIndex)
+        private IEnumerable<RailToBlock> AffectedRailsEnum(PathCollection path, int startIndex, bool getMainRails = true, bool getLinkedRails = true, bool getBeyondPath = true)
         {
             int index = startIndex + 1;
             _lastPathIndex = index;
             _lastEndSignal = null;
+            _lastEndSignalOpposite = null;
             RailConnection connection = (RailConnection)path[startIndex];
             if (connection.InnerConnection.Block != Block)
                 throw new InvalidOperationException("Connection is from another block");
-//            yield return new RailToBlock(connection.Track, false, false); //track with the inbound signal - we reserve only this track, not linked
-//            index++;
             while (index <= path.FrontIndex)
             {
                 connection = (RailConnection) path[index];
@@ -439,21 +500,31 @@ namespace AdvancedPathfinder.PathSignals
                 }
 
                 Rail rail = connection.Track;
-                if (!rail.IsBuilt) ////invalid path, break
+                if (!rail.IsBuilt) //invalid path, break
                     yield break;
                 if (connection.Block != Block)
                     throw new InvalidOperationException("Connection is from another block");
-                yield return new RailToBlock(rail, false, false);
-                for (int j = rail.LinkedRailCount - 1; j >= 0; j--)
+                if (getMainRails)
+                    yield return new RailToBlock(rail, false, false);
+                if (getLinkedRails)
                 {
-                    yield return new RailToBlock(rail.GetLinkedRail(j), true, false);
+                    for (int j = rail.LinkedRailCount - 1; j >= 0; j--)
+                    {
+                        yield return new RailToBlock(rail.GetLinkedRail(j), true, false);
+                    }
                 }
 
-                if (index != startIndex && (!ReferenceEquals(connection.Signal, null) && connection.Signal.IsBuilt || 
-                    !ReferenceEquals(connection.InnerConnection.Signal, null) && connection.InnerConnection.Signal.IsBuilt))
+                if (index != startIndex)
                 {
-                    _lastEndSignal = connection.Signal;
-                    yield break;
+                    RailSignal signal = connection.Signal;
+                    RailSignal oppositeSignal = connection.InnerConnection.Signal;
+                    if (!ReferenceEquals(signal, null) && signal.IsBuilt ||
+                        !ReferenceEquals(oppositeSignal, null) && oppositeSignal.IsBuilt)
+                    {
+                        _lastEndSignal = signal;
+                        _lastEndSignalOpposite = oppositeSignal;
+                        yield break;
+                    }
                 }
 
                 _lastPathIndex = ++index;
@@ -462,6 +533,8 @@ namespace AdvancedPathfinder.PathSignals
             if (connection == null)
                 throw new InvalidOperationException("No available connection in the provided path");
 
+            if (!getBeyondPath) yield break;
+            
             //end of the path, but no signal found (=need to go through all possible connections until signal is found) 
             foreach (var railToBlock in BeyondPathEnum(connection)) yield return railToBlock;
         }
