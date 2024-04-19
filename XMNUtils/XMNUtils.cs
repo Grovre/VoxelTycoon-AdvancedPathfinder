@@ -60,9 +60,9 @@ namespace XMNUtils
         }
     }
 
-    internal static class DictionaryUtils
+    public static class DictionaryUtils
     {
-        internal static float AddFloatToDict<T>(this Dictionary<T, float> dictionary, T key, float count)
+        public static float AddFloatToDict<T>(this Dictionary<T, float> dictionary, T key, float count)
         {
             if (!dictionary.TryGetValue(key, out float dictCount))
             {
@@ -72,7 +72,7 @@ namespace XMNUtils
             float result = dictionary[key] = dictCount + count;
             return result;
         }
-        internal static void AddIntToDict<T>(this Dictionary<T, int> dictionary, T key, int count)
+        public static void AddIntToDict<T>(this Dictionary<T, int> dictionary, T key, int count)
         {
             if (!dictionary.TryGetValue(key, out int dictCount))
             {
@@ -84,7 +84,7 @@ namespace XMNUtils
             }
         }
 
-        internal static void SubIntFromDict<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue)
+        public static void SubIntFromDict<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue)
         {
             if (!dictionary.TryGetValue(key, out int dictCount))
                 throw new InvalidOperationException("No data tu subtract from.");
@@ -95,7 +95,7 @@ namespace XMNUtils
         }
 
         /** return true when the resulting value is a zero */
-        internal static bool SubIntFromDictTestZero<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue)
+        public static bool SubIntFromDictTestZero<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue)
         {
             if (!dictionary.TryGetValue(key, out int dictCount))
                 throw new InvalidOperationException("No data tu subtract from.");
@@ -108,7 +108,7 @@ namespace XMNUtils
             return result == 0;
         }
         
-        internal static bool TrySubIntFromDict<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue, bool removeWhenZero = false)
+        public static bool TrySubIntFromDict<T>(this Dictionary<T, int> dictionary, T key, int count, int minLimit=int.MinValue, bool removeWhenZero = false)
         {
             if (!dictionary.TryGetValue(key, out int dictCount))
                 return false;
@@ -125,7 +125,7 @@ namespace XMNUtils
         }
     }
 
-    internal static class NotificationUtils
+    public static class NotificationUtils
     {
         public static void ShowVehicleHint(Vehicle vehicle, string message, Color? textColor=null, Color? panelColor=null)
         {
@@ -133,7 +133,7 @@ namespace XMNUtils
         }
     }
 
-    internal class Version: IComparable<Version>, IComparable
+    public class Version: IComparable<Version>, IComparable
     {
         private int[] parsed;
 
@@ -209,7 +209,7 @@ namespace XMNUtils
         }
     }
 
-    internal static class ExceptionFault
+    public static class ExceptionFault
     {
         public static bool FaultBlock(Exception e, Action<Exception> action)
         {

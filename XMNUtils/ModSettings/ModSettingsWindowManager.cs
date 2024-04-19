@@ -9,7 +9,7 @@ using VoxelTycoon.Game.UI;
 namespace ModSettingsUtils
 {
     [Harmony]
-    class ModSettingsWindowManager: LazyManager<ModSettingsWindowManager>
+    public class ModSettingsWindowManager: LazyManager<ModSettingsWindowManager>
     {
         private readonly Dictionary<string, ModData> registered = new Dictionary<string, ModData>();
 
