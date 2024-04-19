@@ -5,6 +5,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using VoxelTycoon;
 using VoxelTycoon.Game.UI;
+using VoxelTycoon.Modding;
 
 namespace ModSettingsUtils
 {
@@ -38,12 +39,14 @@ namespace ModSettingsUtils
             registered.Remove(ModClassName);
         }
 
+        /* Method unused, pray it works
         [HarmonyPostfix]
         [HarmonyPatch(typeof(GameSettingsWindowPacksPage), "AddToggle")]
-        static private void AddToggle_pof(SettingsWindowDropdownItem __result, GameSettingsWindowPacksPage __instance, GameSettingsWindowPacksPageItem item)
+        static private void AddToggle_pof(SettingsWindowDropdownItem __result, GameSettingsWindowPacksPage __instance, GameSettingsWindowPacksPage item)
         {
             if (__instance is GameSettingsWindowInGamePacksPage)
             {
+                
                 if (Current.registered.TryGetValue(item.Pack.Name, out var data))
                 {
                     Transform hint = __result.transform.Find("Row1/NameContainer/Hint");
@@ -60,6 +63,7 @@ namespace ModSettingsUtils
                 }
             }
         }
+        */
 
     }
 }

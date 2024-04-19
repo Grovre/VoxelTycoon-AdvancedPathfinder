@@ -205,7 +205,7 @@ namespace XMNUtils
     {
         public static bool IsModInstalled(string modNamespace)
         {
-            return EnabledPacksPerSaveHelper.GetEnabledPackIds().Any(pack => pack.Name == modNamespace);
+            return PackManager.Current.GetPacks().Exists(pack => pack.IsEnabled && pack.Name == modNamespace);
         }
     }
 

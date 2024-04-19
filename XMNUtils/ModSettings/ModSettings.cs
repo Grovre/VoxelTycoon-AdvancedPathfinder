@@ -55,8 +55,11 @@ namespace ModSettingsUtils
                 if (_modSettingsPath == null)
                 {
                     string modNamespace = this.GetType().Namespace;
-                    foreach (Pack pack in EnabledPacksPerSaveHelper.GetEnabledPacks())
+                    foreach (Pack pack in PackManager.Current.GetPacks())
                     {
+                        if (!pack.IsEnabled)
+                            continue;
+                        
                         if (pack.Name == modNamespace)
                         {
                             return _modSettingsPath = pack.Directory.FullName + "/settings.json";
