@@ -11,7 +11,7 @@ namespace AdvancedPathfinder.RailPathfinder
         private const float PlatformMultiplier = 4f;
         private const float CurveMultiplier = 2f;
 
-        public PathfinderNodeBase Owner { get; init; }
+        public PathfinderNodeBase Owner { get; set; }
         public IReadOnlyList<(RailSection section, PathDirection direction)> Sections => _sections;
         public float Length { get; private set; }
 

@@ -8,11 +8,11 @@ namespace AdvancedPathfinder.RailPathfinder
         private const float VelocityResolution = 5f;
         private const float LengthResolution = 50f;
         private const float AccelerationResolution = 10f;
-        public bool Electric { get; init; }
-        public float MaxSpeed { get; init; }
-        public float AccelerationSec { get; init; }
-        public float Length { get; init; }
-        public bool CalculateOnlyBaseScore { get; init; }
+        public bool Electric { get; set; }
+        public float MaxSpeed { get; set; }
+        public float AccelerationSec { get; set; }
+        public float Length { get; set; }
+        public bool CalculateOnlyBaseScore { get; set; }
 
         public RailEdgeSettings()
         { 

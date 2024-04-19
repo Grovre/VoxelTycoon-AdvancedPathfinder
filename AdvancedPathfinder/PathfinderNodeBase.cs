@@ -28,6 +28,7 @@ namespace AdvancedPathfinder
             {
                 _heapNode.Reset();
                 _heapNode.Key = float.MaxValue;
+                _heapNode.Data = this;
             }
 
             PreviousBestEdge = null;

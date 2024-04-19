@@ -95,6 +95,9 @@ namespace FibonacciHeap
         /// </summary>
         public void Insert(FibonacciHeapNode<T, TKey> node)
         {
+            if (node.InHeap)
+                throw new ArgumentException("Node is already in some heap");
+            
             // concatenate node into min list
             if (_minNode != null)
             {
@@ -113,6 +116,7 @@ namespace FibonacciHeap
                 _minNode = node;
             }
 
+            node.InHeap = true;
             _nNodes++;
         }
 
@@ -179,6 +183,7 @@ namespace FibonacciHeap
                 _nNodes--;
             }
 
+            minNode.InHeap = false;
             return minNode;
         }
 

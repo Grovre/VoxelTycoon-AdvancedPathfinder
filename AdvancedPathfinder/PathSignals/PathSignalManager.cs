@@ -1127,7 +1127,7 @@ namespace AdvancedPathfinder.PathSignals
         private static bool _deleteResultList;
 
         [HarmonyPrefix]
-        [HarmonyPatch(typeof(TrackUnit), "Flip")]
+        [HarmonyPatch(typeof(TrackUnit), "OnFlip")]
         // ReSharper disable once InconsistentNaming
         private static void TrackUnit_Flip_prf(TrackUnit __instance)
         {
@@ -1138,7 +1138,7 @@ namespace AdvancedPathfinder.PathSignals
         }
 
         [HarmonyFinalizer]
-        [HarmonyPatch(typeof(TrackUnit), "Flip")]
+        [HarmonyPatch(typeof(TrackUnit), "OnFlip")]
         // ReSharper disable once InconsistentNaming
         private static void TrackUnit_Flip_fin()
         {

@@ -21,7 +21,7 @@ namespace FibonacciHeap
         /// <summary>
         /// Gets or sets the node data object.
         /// </summary>
-        public T Data { get; }
+        public T Data { get; set; }
 
         /// <summary>
         /// Gets or sets the reference to the first child node.
@@ -58,13 +58,16 @@ namespace FibonacciHeap
         /// </summary>
         internal int Degree { get; set; }
 
+        internal bool InHeap { get; set; }
+
         public void Reset()
         {
             Parent = null;
             Child = null;
-            Left = null;
-            Right = null;
+            Left = this;
+            Right = this;
             Mark = false;
+            InHeap = false;
             Degree = 0;
         }
     }

@@ -2,11 +2,11 @@
 
 namespace AdvancedPathfinder.PathSignals
 {
-    public struct RailToBlock
+    public class RailToBlock
     {
-        public Rail Rail { get; init; }
-        public bool IsLinkedRail { get; init; }
-        public bool IsBeyondPath { get; init; }
+        public Rail Rail { get; set; }
+        public bool IsLinkedRail { get; set; }
+        public bool IsBeyondPath { get; set; }
 
         public RailToBlock(Rail rail, bool isLinkedRail, bool isBeyondPath)
         {
