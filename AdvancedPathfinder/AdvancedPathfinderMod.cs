@@ -4,7 +4,6 @@ using AdvancedPathfinder.PathSignals;
 using AdvancedPathfinder.RailPathfinder;
 using AdvancedPathfinder.UI;
 using HarmonyLib;
-using ModSettingsUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using VoxelTycoon;
@@ -40,17 +39,11 @@ namespace AdvancedPathfinder
 
         protected override void OnGameStarted()
         {
-            ModSettings<Settings>.Current.Subscribe(OnSettingsChanged);
-#if DISABLE
-#else
-            ModSettingsWindowManager.Current.Register<SettingsWindowPage>("AdvancedPathfinder"/* this.GetType().Name*/, "Path signals & improved pathfinder");
             Manager<RailPathfinderManager>.Initialize();
             if (SimpleManager<PathSignalManager>.Current == null)
             {
                 SimpleManager<PathSignalManager>.Initialize();
             }
-#endif
-            OnSettingsChanged();
         }
 
         protected override void Deinitialize()
@@ -76,14 +69,6 @@ namespace AdvancedPathfinder
                 SimpleManager<PathSignalManager>.Current.Read(reader);
             }
 #endif
-        }
-
-        private void OnSettingsChanged()
-        {
-            SimpleLazyManager<TrainPathHighlighter>.Current.DisplayIndividualPaths =
-                ModSettings<Settings>.Current.HighlightTrainPaths;
-            SimpleLazyManager<TrainPathHighlighter>.Current.DisplayAllTrainsPaths =
-                ModSettings<Settings>.Current.HighlightAllTrainPaths;
         }
         
         private static void ShowUpdatePathHint(double elapsedMilliseconds, Train train)

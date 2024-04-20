@@ -17,10 +17,8 @@ namespace AdvancedPathfinder.UI
     [HarmonyPatch]
     public class TrainPathHighlighter: SimpleLazyManager<TrainPathHighlighter>
     {
-        private bool _displayIndividualPaths;
         private readonly Dictionary<Train, TrainData> _data = new();
         private readonly HashSet<Train> _displayedWindow = new();
-        private bool _displayAllTrainsPaths;
         private readonly Color[] _colors = 
         {
             Color.blue.WithAlpha(0.5f),
@@ -43,13 +41,13 @@ namespace AdvancedPathfinder.UI
 
         public bool DisplayIndividualPaths
         {
-            get => _displayIndividualPaths;
+            get => ModSettings.HighlightTrainPaths;
             set
             {
-                if (_displayIndividualPaths != value)
+                if (ModSettings.HighlightTrainPaths != value)
                 {
-                    _displayIndividualPaths = value;
-                    if (_displayAllTrainsPaths)
+                    ModSettings.HighlightTrainPaths.Value = value;
+                    if (ModSettings.HighlightAllTrainPaths)
                         return;
                     if (value)
                     {
@@ -70,12 +68,12 @@ namespace AdvancedPathfinder.UI
 
         public bool DisplayAllTrainsPaths
         {
-            get => _displayAllTrainsPaths;
+            get => ModSettings.HighlightAllTrainPaths;
             set
             {
-                if (_displayAllTrainsPaths != value)
+                if (ModSettings.HighlightAllTrainPaths != value)
                 {
-                    _displayAllTrainsPaths = value;
+                    ModSettings.HighlightAllTrainPaths.Value = value;
                     if (value)
                         ShowForAll();
                     else
@@ -96,7 +94,7 @@ namespace AdvancedPathfinder.UI
 
         public void HideFor(Train train)
         {
-            if (!_displayAllTrainsPaths)
+            if (!ModSettings.HighlightAllTrainPaths)
                 HideForInternal(train);
             else if (_data.TryGetValue(train, out TrainData data))
             {
@@ -114,7 +112,7 @@ namespace AdvancedPathfinder.UI
         private void OnTrainAttached(Train train, PathCollection path)
         {
             bool? brighter = _displayedWindow.Contains(train) ? true : null;
-            if (_displayAllTrainsPaths || (brighter == true))
+            if (ModSettings.HighlightAllTrainPaths || (brighter == true))
                 ShowForInternal(train, brighter);
         }
 

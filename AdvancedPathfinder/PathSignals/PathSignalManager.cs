@@ -9,7 +9,6 @@ using AdvancedPathfinder.UI;
 using Delegates;
 using HarmonyLib;
 using JetBrains.Annotations;
-using ModSettingsUtils;
 using UnityEngine;
 using VoxelTycoon;
 using VoxelTycoon.Serialization;
@@ -104,7 +103,6 @@ namespace AdvancedPathfinder.PathSignals
             Behaviour.OnLateUpdateAction -= OnLateUpdate;
             Behaviour.OnLateUpdateAction += OnLateUpdate;
             Stopwatch sw = Stopwatch.StartNew();
-            ModSettings<Settings>.Current.Subscribe(OnSettingsChanged);
             FindBlocksAndSignals();
             SetTrainsPathUpdateTimes();
             sw.Stop();
@@ -114,7 +112,6 @@ namespace AdvancedPathfinder.PathSignals
             SimpleLazyManager<TrainHelper>.Current.RegisterTrainAttachedAction(TrainAttached);
             SimpleLazyManager<TrainHelper>.Current.RegisterTrainDetachedAction(TrainDetached);
             ReserveTrainsPathsAfterStart();
-            OnSettingsChanged();
             _highlightDirty = true;
 //            FileLog.Log(string.Format("Path signals initialized in {0:N3}ms, found signals: {1:N0}, found blocks: {2:N0}", sw.ElapsedTicks / 10000f, _pathSignals.Count, _railBlocks.Count));
         }
@@ -302,13 +299,6 @@ namespace AdvancedPathfinder.PathSignals
             _highlightDirty = true;
         }
 
-        private void OnSettingsChanged()
-        {
-            SimpleLazyManager<PathSignalHighlighter>.Current.HighlightPaths = ModSettings<Settings>.Current.HighlightReservedPaths;
-            SimpleLazyManager<PathSignalHighlighter>.Current.HighlightReservedBounds = ModSettings<Settings>.Current.HighlightReservedPathsExtended;
-            SimpleLazyManager<PathSignalHighlighter>.Current.HighlightPreReservedSignals = ModSettings<Settings>.Current.HighlightReservedPathsExtended;
-        }
-
         private void OnLateUpdate()
         {
             foreach (Train train in _updateTrainPath)
@@ -318,13 +308,11 @@ namespace AdvancedPathfinder.PathSignals
             }
             _updateTrainPath.Clear();
             if (_highlightDirty)
-            {
-                OnSettingsChanged();
+            { 
                 SimpleLazyManager<PathSignalHighlighter>.Current.Redraw();
                 _highlightDirty = false;
             }
-            else if (ModSettings<Settings>.Current.HighlightReservedPathsExtended) {
-                    
+            else if (ModSettings.HighlightReservedPathsExtended) {
                 foreach (Train train in _updateTrainBoundsHighlight)
                 {
                     UpdateTrainBoundsHighlight(train);

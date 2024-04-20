@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using AdvancedPathfinder.Helpers;
 using AdvancedPathfinder.UI;
 using HarmonyLib;
-using ModSettingsUtils;
 using UnityEngine;
 using VoxelTycoon;
 using VoxelTycoon.Tracks;
