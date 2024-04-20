@@ -11,6 +11,7 @@ public class ModSettings : SettingsMod
     public static readonly Setting<bool> HighlightAllTrainPaths = new(false);
     public static readonly Setting<bool> HighlightReservedPaths = new(true);
     public static readonly Setting<bool> HighlightReservedPathsExtended = new(false);
+    public static readonly Setting<bool> DebugPathfinderStats = new(false);
     
     protected override void SetupSettingsControl(SettingsControl settingsControl, WorldSettings worldSettings)
     {
@@ -24,5 +25,7 @@ public class ModSettings : SettingsMod
         settingsControl.AddToggle(locale.GetString("advanced_pathfinder_mod/highlight_reserved_path"), null, HighlightReservedPaths);
         
         settingsControl.AddToggle(locale.GetString("advanced_pathfinder_mod/highlight_reserved_path_extended"), null, HighlightReservedPathsExtended);
+        
+        // settingsControl.AddToggle("Debug pathfinder stats", null, DebugPathfinderStats);
     }
 }

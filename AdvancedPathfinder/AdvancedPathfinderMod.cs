@@ -116,14 +116,14 @@ namespace AdvancedPathfinder
 
         protected override void OnLateUpdate()
         {
-/*            PathfinderStats stats = Manager<RailPathfinderManager>.Current?.Stats;
-            if (stats != null)
+            PathfinderStats stats = Manager<RailPathfinderManager>.Current?.Stats;
+            if (ModSettings.DebugPathfinderStats && stats != null)
             {
                 GUIHelper.Draw(delegate
                 {
                     GUILayout.TextArea(stats.GetStatsText());
                 });
-            }*/
+            }
         }
 
         [HarmonyPostfix]
