@@ -30,9 +30,9 @@ namespace AdvancedPathfinder.PathSignals
 
         public void PreReserveSelectedSignals(Train train)
         {
+            if (_signalsToPreReserve == null) return;
             // TODO: Properly fix not entering a station with empty spaces available
             _signalsToPreReserve.Clear();
-            if (_signalsToPreReserve == null) return;
             
             foreach (PathSignalData signalData in _signalsToPreReserve)
             {
