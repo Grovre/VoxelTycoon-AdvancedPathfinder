@@ -1101,9 +1101,20 @@ namespace AdvancedPathfinder.PathSignals
         // ReSharper disable once InconsistentNaming
         private static void PathCollection_ShrinkFront_prf(PathCollection __instance, ref int newFrontIndex)
         {
+            var t = newFrontIndex;
             if (!_canShrinkReservedPath && _origReservedPathIndex > Int32.MinValue)
                 newFrontIndex = _origReservedPathIndex;
-            Current?.PathShrinkingFront(__instance, ref newFrontIndex);
+            
+            // TODO: Fix the NullReferenceException when loading a game
+            try
+            {
+                Current?.PathShrinkingFront(__instance, ref newFrontIndex);
+            }
+            catch (NullReferenceException e)
+            {
+                FileLog.Log(e.ToString());
+            }
+            
             _origReservedPathIndex = int.MinValue;
 //            FileLog.Log($"Shrink front, new front index {_oldPath.IndexOf(__instance[newFrontIndex])}");
         }
