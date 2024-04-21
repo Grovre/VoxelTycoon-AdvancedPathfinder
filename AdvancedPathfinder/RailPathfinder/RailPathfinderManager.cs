@@ -72,7 +72,26 @@ namespace AdvancedPathfinder.RailPathfinder
             List<TrackConnection> result)
         {
             RailEdgeSettings settings = new RailEdgeSettings(train);
-            return FindPath(origin, target, settings, result);
+            var result2 = new List<TrackConnection>();
+            var pathFound = FindPath(origin, target, settings, result2);
+            if (!pathFound)
+                return false;
+            
+            // TODO: Reevaluate life choices
+            // This *MIGHT* force pathfinding after every signal. That's what we want instead of
+            // reserving a path all the way to the destination. That's why trains wouldn't enter stations
+            // sometimes. Their reserved path would be taken up at a station so they wouldn't choose
+            // another spot to stop at in the station
+            int i;
+            for (i = 0; i < result2.Count; i++)
+            {
+                result.Add(result2[i]);
+                
+                if (result[2] as RailConnection is { Signal.IsBuilt: true })
+                    break;
+            }
+
+            return true;
         }
 
         public void MarkClosedSectionsDirty()
