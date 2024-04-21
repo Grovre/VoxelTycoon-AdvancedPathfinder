@@ -1096,25 +1096,16 @@ namespace AdvancedPathfinder.PathSignals
         private static readonly List<TrackConnection> _oldPath = new();
         private static PathCollection _addedToFront = null;
 
+        // TODO: Fix the NullReferenceException when loading a game
         [HarmonyPrefix]
         [HarmonyPatch(typeof(PathCollection), "ShrinkFront")]
         // ReSharper disable once InconsistentNaming
         private static void PathCollection_ShrinkFront_prf(PathCollection __instance, ref int newFrontIndex)
         {
-            var t = newFrontIndex;
+            var t = newFrontIndex; // To see prev value during debug
             if (!_canShrinkReservedPath && _origReservedPathIndex > Int32.MinValue)
                 newFrontIndex = _origReservedPathIndex;
-            
-            // TODO: Fix the NullReferenceException when loading a game
-            try
-            {
-                Current?.PathShrinkingFront(__instance, ref newFrontIndex);
-            }
-            catch (NullReferenceException e)
-            {
-                FileLog.Log(e.ToString());
-            }
-            
+            Current?.PathShrinkingFront(__instance, ref newFrontIndex);
             _origReservedPathIndex = int.MinValue;
 //            FileLog.Log($"Shrink front, new front index {_oldPath.IndexOf(__instance[newFrontIndex])}");
         }

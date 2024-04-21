@@ -81,7 +81,8 @@ namespace AdvancedPathfinder.RailPathfinder
             // This *MIGHT* force pathfinding after every signal. That's what we want instead of
             // reserving a path all the way to the destination. That's why trains wouldn't enter stations
             // sometimes. Their reserved path would be taken up at a station so they wouldn't choose
-            // another spot to stop at in the station
+            // another spot to stop at in the station. It seems to work albeit with some
+            // brief initial lag when loading a game
             int i;
             for (i = 0; i < result2.Count; i++)
             {

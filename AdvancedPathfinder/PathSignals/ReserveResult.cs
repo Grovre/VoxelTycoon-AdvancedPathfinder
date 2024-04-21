@@ -20,11 +20,7 @@ namespace AdvancedPathfinder.PathSignals
 
         public void AddSignalToPreReserve(PathSignalData signalData)
         {
-            if (_signalsToPreReserve == null)
-            {
-                _signalsToPreReserve = PooledHashSet<PathSignalData>.Take();
-            }
-
+            _signalsToPreReserve ??= PooledHashSet<PathSignalData>.Take();
             _signalsToPreReserve.Add(signalData);
         }
 
